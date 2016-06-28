@@ -7,6 +7,8 @@ class ChatClient
 		#Client keeps a local instance of connection
 		@connection = connection
 
+		@username = ""
+
 		#Initialze thread arrays to nil
 		@requests = nil
 		@responses = nil
@@ -35,8 +37,14 @@ class ChatClient
 				#Get the message to send
 				msg = $stdin.gets.chomp
 
+				#Set the username
+				@username = msg if @username.empty?
+
 				#Send to connection and prop.
         		@connection.puts(msg)
+
+        		#Display a prompt
+        		print "#{@username}: "
 			end
 		end
 	end
@@ -47,13 +55,24 @@ class ChatClient
 				#Get any messages from the connection
 				message = @connection.gets.chomp
 
+				#Go to start of line
+				print "\r"
+
 				#Print the message
         		print_message(message)
+
+        		#Display a prompt
+        		print "#{@username}: "
 			end
 		end
 	end
 
 	private
+
+	#Notify the user
+	def notify
+		print "\a"
+	end
 
 	#Parse a message and display it
 	def print_message(message)
@@ -67,8 +86,9 @@ class ChatClient
 			
 			#check for any mentions to highlight
 			message_array.last.split(" ").each do |word|
-				if word.start_with?('@')
-					print "#{word.pink} "
+				if word.start_with?('@') && word.downcase.include?(@username.downcase) 
+					print "#{word.yellow} "
+					notify
 				else
 					print "#{word} "
 				end
