@@ -7,8 +7,8 @@ class ChatClient
 	def initialize(connection)
 		#Client keeps a local instance of connection
 		@connection = connection
-
 		@username = ""
+		@draft = ""
 
 		#Initialze thread arrays to nil
 		@requests = nil
@@ -48,11 +48,12 @@ class ChatClient
 			loop do
 				#Get the message to send
 				#msg = $stdin.gets.chomp
-				msg = ""
+				msg = @draft
 
 				while (chr = get_char).ord != 13
 					print chr
 					msg += chr
+					@draft = msg
 				end
 
 
@@ -61,6 +62,8 @@ class ChatClient
 
 				#Send to connection and prop.
         		@connection.puts(msg)
+
+        		@draft = ""
 
         		#Display a prompt
         		print "\n#{@username}n: "
@@ -86,7 +89,7 @@ class ChatClient
         		end
 
         		#Display a prompt
-        		print "#{@username}: "
+        		print "#{@username}: #{@draft}"
 			end
 		end
 	end
