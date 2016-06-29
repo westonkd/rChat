@@ -1,4 +1,5 @@
 require "socket"
+require "io/wait"
 
 =begin
 =end
@@ -24,6 +25,17 @@ class ChatClient
 		@responses.join
 	end
 
+
+	def get_char
+	  state = `stty -g`
+	  `stty raw -echo -icanon isig`
+
+	  STDIN.getc.chr
+	ensure
+	  `stty #{state}`
+	end
+
+	#colorize strings
 	def colorize(color_code)
     	"\e[#{color_code}m#{self}\e[0m"
   	end
@@ -35,7 +47,14 @@ class ChatClient
 		@requests = Thread.new do
 			loop do
 				#Get the message to send
-				msg = $stdin.gets.chomp
+				#msg = $stdin.gets.chomp
+				msg = ""
+
+				while (chr = get_char).ord != 13
+					print chr
+					msg += chr
+				end
+
 
 				#Set the username
 				@username = msg if @username.empty?
@@ -44,7 +63,7 @@ class ChatClient
         		@connection.puts(msg)
 
         		#Display a prompt
-        		print "#{@username}: "
+        		print "\n#{@username}n: "
 			end
 		end
 	end
@@ -56,10 +75,15 @@ class ChatClient
 				message = @connection.gets.chomp
 
 				#Go to start of line
-				print "\r"
-
+				print "\r\033[K"
+				$stdout.flush
 				#Print the message
-        		print_message(message)
+        		print_message(message.strip)
+
+        		#Remove white space
+        		(message.length + 1).times do
+        			print "\b"
+        		end
 
         		#Display a prompt
         		print "#{@username}: "
