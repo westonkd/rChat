@@ -73,6 +73,12 @@ def run
 				@connections[:clients][username] = client
 				client.puts "Welcome #{username}! You are now connected."
 
+				@connections[:clients].each do |send_name, send_client|
+					#Don't send the message to the sender
+					send_client.puts "#{username}^| joined the chat." unless send_name == username
+					puts "SENT TO #{send_name}"
+				end
+
 				#Listen for messages to propagate
 				propagate_messages(username, client)
 			end
