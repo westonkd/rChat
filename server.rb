@@ -3,33 +3,54 @@ require "socket"
 class ChatServer
 	def initialize(ip, port)
 		@server = TCPServer.open(ip, port)
-    	@connections = Hash.new
-    	@clients = Hash.new
-    	@connections[:clients] = @clients
-    	run
+		@connections = Hash.new
+		@clients = Hash.new
+		@connections[:clients] = @clients
+		run
 	end
 
 	def propagate_messages(username, client)
 		puts "listening to #{username}"
 		loop do
 			#Get the next message from the client
-			message = client.gets.chomp
+			message = client.gets.strip
 
-			puts ">> #{username} #{message}"
+			#Print log info
+			puts "RECEIVED: #{username} #{message}"
 
-			#Propagate the message to all other connected clients
-			@connections[:clients].each do |send_name, send_client|
+			#Check for secial functions
+			if message == "\\list"
+				#Send a list of current users
+				list = []
+				@connections[:clients].each do |n, c| 
+					list << n
+				end
+
+				puts "SENDLIST: #{username.to_s} #{"\list^|#{list.join("^|")}"}"
+			elsif message == "\\quit"
+				@connections[:clients].delete username
+
+				@connections[:clients].each do |send_name, send_client|
+					#Don't send the message to the sender
+					send_client.puts "#{username}^| left the chat."
+					puts "SENT TO #{send_name}"
+				end
+			else
+				#Propagate the message to all other connected clients
+				@connections[:clients].each do |send_name, send_client|
 				#Don't send the message to the sender
 				unless send_name == username 
 					#Send the message
 					send_client.puts "#{username.to_s}^|#{message}"
+					puts "SENT TO #{send_name}"
 				end
 			end
 		end
 	end
+end
 
-	def run
-		loop {
+def run
+	loop {
 			#Start a thread for each client that connects
 			Thread.start(@server.accept) do |client|
 				#Read the username 
@@ -55,8 +76,8 @@ class ChatServer
 				#Listen for messages to propagate
 				propagate_messages(username, client)
 			end
-		}.join
+			}.join
+		end
 	end
-end
 
-server = ChatServer.new("localhost", 3000)
+	server = ChatServer.new("localhost", 3000)

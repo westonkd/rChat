@@ -27,18 +27,18 @@ class ChatClient
 
 
 	def get_char
-	  state = `stty -g`
-	  `stty raw -echo -icanon isig`
+		state = `stty -g`
+		`stty raw -echo -icanon isig`
 
-	  STDIN.getc.chr
+		STDIN.getc.chr
 	ensure
-	  `stty #{state}`
+		`stty #{state}`
 	end
 
 	#colorize strings
 	def colorize(color_code)
-    	"\e[#{color_code}m#{self}\e[0m"
-  	end
+		"\e[#{color_code}m#{self}\e[0m"
+	end
 
 	#send a message to the connection to be
 	#propagated to each client
@@ -51,29 +51,45 @@ class ChatClient
 				msg = @draft
 
 				while (chr = get_char).ord != 13
-					print chr
-					msg += chr
-					@draft = msg
+					# If the user backspaced
+					if chr.ord == 127 && msg != ""
+						#Pop off the last letter
+						msg = msg[0...-1]
+						print "\r\033[K"
+						$stdout.flush
+						print "#{@username}: #{msg}" 
+						@draft = msg
+					else
+						print chr
+						msg += chr
+						@draft = msg
+					end
 				end
-
 
 				#Set the username
 				@username = msg if @username.empty?
 
 				#Send to connection and prop.
-        		@connection.puts(msg)
+				@connection.puts(msg)
 
-        		@draft = ""
+				@draft = ""
 
         		#Display a prompt
-        		print "\n#{@username}n: "
-			end
-		end
-	end
+        		print "\n#{@username}: "
 
-	def listen
-		@responses = Thread.new do 
-			loop do
+        		#Check for quit
+				exit if msg == "\\quit"
+        	end
+        end
+    end
+
+    def stop
+    	puts "stopped?"
+    end
+
+    def listen
+    	@responses = Thread.new do 
+    		loop do
 				#Get any messages from the connection
 				message = @connection.gets.chomp
 
@@ -81,7 +97,7 @@ class ChatClient
 				print "\r\033[K"
 				$stdout.flush
 				#Print the message
-        		print_message(message.strip)
+				print_message(message.strip)
 
         		#Remove white space
         		(message.length + 1).times do
@@ -90,11 +106,11 @@ class ChatClient
 
         		#Display a prompt
         		print "#{@username}: #{@draft}"
-			end
-		end
-	end
+        	end
+        end
+    end
 
-	private
+    private
 
 	#Notify the user
 	def notify
@@ -113,7 +129,7 @@ class ChatClient
 			
 			#check for any mentions to highlight
 			message_array.last.split(" ").each do |word|
-				if word.start_with?('@') && word.downcase.include?(@username.downcase) 
+				if (word.start_with?('@') && word.downcase.include?(@username.downcase)) || word.downcase.include?("yall")
 					print "#{word.yellow} "
 					notify
 				else
@@ -132,33 +148,34 @@ Adds colored output functions
 class String
   # colorization
   def colorize(color_code)
-    "\e[#{color_code}m#{self}\e[0m"
+  	"\e[#{color_code}m#{self}\e[0m"
   end
 
   def red
-    colorize(31)
+  	colorize(31)
   end
 
   def green
-    colorize(32)
+  	colorize(32)
   end
 
   def yellow
-    colorize(33)
+  	colorize(33)
   end
 
   def blue
-    colorize(34)
+  	colorize(34)
   end
 
   def pink
-    colorize(35)
+  	colorize(35)
   end
 
   def light_blue
-    colorize(36)
+  	colorize(36)
   end
 end
 
+#Establish the connection and start the client
 connection = TCPSocket.open("localhost", 3000)
-ChatClient.new(connection)
+chat_client = ChatClient.new(connection)
