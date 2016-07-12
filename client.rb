@@ -1,8 +1,12 @@
+=begin
+Weston Dransfield
+CS 460
+Chat Client
+=end
+
 require "socket"
 require "io/wait"
 
-=begin
-=end
 class ChatClient
 	def initialize(connection)
 		#Client keeps a local instance of connection

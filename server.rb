@@ -1,11 +1,19 @@
+=begin
+Weston Dransfield
+CS 460
+Chat Server
+=end
+
 require "socket"
 
 class ChatServer
 	def initialize(ip, port)
-		@server = TCPServer.open(ip, port)
+		@listening_socket = TCPServer.open(ip, port)
 		@connections = Hash.new
 		@clients = Hash.new
 		@connections[:clients] = @clients
+
+		#Run the server
 		run
 	end
 
@@ -52,7 +60,7 @@ end
 def run
 	loop {
 			#Start a thread for each client that connects
-			Thread.start(@server.accept) do |client|
+			Thread.start(@listening_socket.accept) do |client|
 				#Read the username 
 				#The username shouold be the first message sent
 				username = client.gets.chomp.to_sym
